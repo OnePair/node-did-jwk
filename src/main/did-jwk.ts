@@ -56,8 +56,7 @@ export class DidJwk {
     let groups: RegExpMatchArray = didUri.match(JWK_DID_REGEX);
 
     let base64Key: string = groups[1];
-    //let keyPem: string = Buffer.from(base64Key, "base64").toString();
-    let keyPem: string = base64url.fromBase64(base64Key);
+    let keyPem: string = Buffer.from(base64Key, "base64").toString();
 
     let jwk: JWK.Key = JWK.asKey(keyPem);
 

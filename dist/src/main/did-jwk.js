@@ -51,8 +51,7 @@ var DidJwk = /** @class */ (function () {
             throw new URIError("URI does not match the did:jwk pattern!");
         var groups = didUri.match(exports.JWK_DID_REGEX);
         var base64Key = groups[1];
-        //let keyPem: string = Buffer.from(base64Key, "base64").toString();
-        var keyPem = base64url_1.default.fromBase64(base64Key);
+        var keyPem = Buffer.from(base64Key, "base64").toString();
         var jwk = jose_1.JWK.asKey(keyPem);
         return new DidJwk(jwk, didUri);
     };
