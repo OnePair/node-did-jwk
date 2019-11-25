@@ -3,6 +3,7 @@ import { DIDDocument, PublicKey } from "did-resolver";
 import { JwkPublicKey } from "./model";
 
 import * as util from "util";
+import base64url from "base64url";
 
 export const JWK_DID_REGEX = new RegExp("^did:jwk:([-A-Za-z0-9+=]{1,3000})$");
 const DID_FORMAT = "did:jwk:%s";
@@ -55,7 +56,8 @@ export class DidJwk {
     let groups: RegExpMatchArray = didUri.match(JWK_DID_REGEX);
 
     let base64Key: string = groups[1];
-    let keyPem: string = Buffer.from(base64Key, "base64").toString();
+    //let keyPem: string = Buffer.from(base64Key, "base64").toString();
+    let keyPem: string = base64url.fromBase64(base64Key);
 
     let jwk: JWK.Key = JWK.asKey(keyPem);
 
@@ -70,6 +72,6 @@ export class DidJwk {
       // Convert to the public key
       publicKey = jwk.toPEM(false);
 
-    return Buffer.from(publicKey).toString("base64");
+    return base64url(publicKey);
   }
 }

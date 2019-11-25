@@ -10,6 +10,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var jose_1 = require("jose");
 var model_1 = require("./model");
 var util = __importStar(require("util"));
+var base64 = __importStar(require("urlsafe-base64"));
 exports.JWK_DID_REGEX = new RegExp("^did:jwk:([-A-Za-z0-9+=]{1,3000})$");
 var DID_FORMAT = "did:jwk:%s";
 var DidJwk = /** @class */ (function () {
@@ -21,6 +22,7 @@ var DidJwk = /** @class */ (function () {
         if (this.didUri != null)
             return this.didUri;
         var publicKey = DidJwk.jwkToPublicBase64(this.jwk);
+        console.log("encoded public key: " + publicKey);
         return util.format(DID_FORMAT, publicKey);
     };
     DidJwk.prototype.getDidDocument = function () {
@@ -47,7 +49,8 @@ var DidJwk = /** @class */ (function () {
             throw new URIError("URI does not match the did:jwk pattern!");
         var groups = didUri.match(exports.JWK_DID_REGEX);
         var base64Key = groups[1];
-        var keyPem = Buffer.from(base64Key, "base64").toString();
+        //let keyPem: string = Buffer.from(base64Key, "base64").toString();
+        var keyPem = base64.decode(base64Key);
         var jwk = jose_1.JWK.asKey(keyPem);
         return new DidJwk(jwk, didUri);
     };
@@ -58,7 +61,9 @@ var DidJwk = /** @class */ (function () {
         else
             // Convert to the public key
             publicKey = jwk.toPEM(false);
-        return Buffer.from(publicKey).toString("base64");
+        //return Buffer.from(publicKey).toString("base64");
+        console.log("ENCODED: " + base64.encode(publicKey).tostring("base64"));
+        return base64.encode(publicKey).tostring("base64");
     };
     return DidJwk;
 }());
