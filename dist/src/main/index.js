@@ -5,3 +5,4 @@ function __export(m) {
 Object.defineProperty(exports, "__esModule", { value: true });
 __export(require("./did-jwk"));
 __export(require("./did-jwk-resolver"));
+__export(require("./model"));
