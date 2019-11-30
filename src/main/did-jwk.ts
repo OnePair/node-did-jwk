@@ -2,17 +2,19 @@ import { JWK } from "jose";
 import { DIDDocument, PublicKey } from "did-resolver";
 import { JwkPublicKey } from "./model";
 
-import * as util from "util";
+import util from "util";
 import base64url from "base64url";
+import jsonpack from "jsonpack";
 
 export const JWK_DID_REGEX = new RegExp("^did:jwk:([-A-Za-z0-9+=]{1,3000})$");
 const DID_FORMAT = "did:jwk:%s";
 
 export class DidJwk {
   private didUri: string;
-  private jwk: JWK.Key;
+  private jwk: JWK.RSAKey | JWK.ECKey | JWK.OKPKey | JWK.OctKey;
 
-  constructor(jwk: JWK.Key, didUri?: string) {
+  constructor(jwk: JWK.RSAKey | JWK.ECKey | JWK.OKPKey | JWK.OctKey,
+    didUri?: string) {
     this.jwk = jwk;
     this.didUri = didUri || null;
   }
@@ -55,22 +57,26 @@ export class DidJwk {
 
     let groups: RegExpMatchArray = didUri.match(JWK_DID_REGEX);
 
-    let base64Key: string = groups[1];
-    let keyPem: string = Buffer.from(base64Key, "base64").toString();
 
-    let jwk: JWK.Key = JWK.asKey(keyPem);
+    let base64Key: string = groups[1];
+    let compressedPublicKey: string = Buffer.from(base64Key, "base64")
+      .toString();
+
+    let jwk: JWK.RSAKey | JWK.ECKey | JWK.OKPKey | JWK.OctKey =
+      jsonpack.unpack(compressedPublicKey);
 
     return new DidJwk(jwk, didUri);
   }
 
-  private static jwkToPublicBase64(jwk: JWK.Key): string {
-    let publicKey: string;
-    if (jwk.public)
-      publicKey = jwk.toPEM(false);
-    else
-      // Convert to the public key
-      publicKey = jwk.toPEM(false);
+  private static jwkToPublicBase64(jwk: JWK.RSAKey | JWK.ECKey | JWK.OKPKey
+    | JWK.OctKey): string {
+    // 1) Get the public key
+    let publicKey: object = jwk.toJWK(false);
 
-    return base64url(publicKey);
+    // 2) Compress
+    let compressedPublicKey: string = jsonpack.pack(publicKey);
+
+    // 3) Encode
+    return base64url(compressedPublicKey);
   }
 }
