@@ -38,22 +38,38 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var chai_1 = require("chai");
 var did_resolver_1 = require("did-resolver");
-var jose_1 = require("jose");
+//import { JWK } from "jose";
+var node_jose_1 = require("node-jose");
 var __1 = require("../");
 var did1;
 describe("DID JWK Tests", function () {
     var jwk1;
-    before(function () {
-        jwk1 = jose_1.JWK.generateSync("EC", "secp256k1");
-    });
+    before(function () { return __awaiter(void 0, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, node_jose_1.JWK.createKey("EC", "P-256", { alg: "ES256" })];
+                case 1:
+                    //jwk1 = JWK.generateSync("EC", "secp256k1");
+                    jwk1 = _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    }); });
     it("Should create a did from the JWK", function () {
         did1 = new __1.DidJwk(jwk1);
         chai_1.assert.isTrue(__1.JWK_DID_REGEX.test(did1.getDidUri()));
     });
     it("Should parse DID from uri", function () {
-        chai_1.assert.doesNotThrow(function () {
-            __1.DidJwk.fromUri(did1.getDidUri());
-        });
+        chai_1.assert.doesNotThrow(function () { return __awaiter(void 0, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, __1.DidJwk.fromUri(did1.getDidUri())];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        }); });
     });
     it("Should generate the valid DID document", function () {
         chai_1.assert.doesNotThrow(function () {

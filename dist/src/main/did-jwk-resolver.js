@@ -40,8 +40,14 @@ var _1 = require("./");
 function getResolver() {
     function resolve(did, parsed, didResolver) {
         return __awaiter(this, void 0, void 0, function () {
+            var didJwk;
             return __generator(this, function (_a) {
-                return [2 /*return*/, _1.DidJwk.fromUri(did).getDidDocument()];
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, _1.DidJwk.fromUri(did)];
+                    case 1:
+                        didJwk = _a.sent();
+                        return [2 /*return*/, didJwk.getDidDocument()];
+                }
             });
         });
     }

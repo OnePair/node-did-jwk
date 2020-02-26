@@ -1,5 +1,5 @@
-import { JWK } from "jose";
 import { PublicKey } from "did-resolver";
+export declare const KEY_ID_FORMAT: string;
 export declare class JwkPublicKey implements PublicKey {
     id: string;
     type: string;
@@ -9,6 +9,6 @@ export declare class JwkPublicKey implements PublicKey {
     publicKeyBase58?: string;
     publicKeyHex?: string;
     publicKeyPem?: string;
-    publicKeyJwk: JWK.Key;
-    constructor(didUri: string, jwk: JWK.Key);
+    publicKeyJwk: object;
+    constructor(id: string, jwk: object);
 }

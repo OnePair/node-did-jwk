@@ -1,6 +1,7 @@
-import { JWK } from "jose";
+//import { JWK } from "jose";
+import { JWK } from "node-jose";
 import { DIDDocument, PublicKey } from "did-resolver";
-import { JwkPublicKey } from "./model";
+import { JwkPublicKey, KEY_ID_FORMAT } from "./model";
 
 import util from "util";
 import base64url from "base64url";
@@ -11,10 +12,11 @@ const DID_FORMAT = "did:jwk:%s";
 
 export class DidJwk {
   private didUri: string;
-  private jwk: JWK.RSAKey | JWK.ECKey | JWK.OKPKey | JWK.OctKey;
+  //private jwk: JWK.RSAKey | JWK.ECKey | JWK.OKPKey | JWK.OctKey;
+  private jwk: JWK.Key;
 
-  constructor(jwk: JWK.RSAKey | JWK.ECKey | JWK.OKPKey | JWK.OctKey,
-    didUri?: string) {
+  constructor(jwk: JWK.Key, didUri?: string) {
+    JWK.createKey
     this.jwk = jwk;
     this.didUri = didUri || null;
   }
@@ -29,16 +31,18 @@ export class DidJwk {
 
   public getDidDocument(): DIDDocument {
     let didUri: string = this.getDidUri();
-    let publicJwk: JWK.Key;
-
+    let publicJwk: object = this.jwk.toJSON(false);
+    /*
     if (this.jwk.private)
       publicJwk = DidJwk.fromUri(didUri).getJwk();
     else
-      publicJwk = this.jwk;
+      publicJwk = this.jwk;*/
 
-    let publicKey: PublicKey = new JwkPublicKey(this.getDidUri(), publicJwk);
+    let publicKey: PublicKey =
+      new JwkPublicKey(util.format(KEY_ID_FORMAT, this.getDidUri()),
+        publicJwk);
     let publicKeys: PublicKey[] = [publicKey];
-    let keyId: string = this.getDidUri() + "#keys-1";
+    //let keyId: string = this.getDidUri() + "#keys-1";
 
     return {
       "@context": "https://w3id.org/did/v1",
@@ -51,27 +55,28 @@ export class DidJwk {
     return this.jwk;
   }
 
-  public static fromUri(didUri: string): DidJwk {
-    if (!JWK_DID_REGEX.test(didUri))
-      throw new URIError("URI does not match the did:jwk pattern!");
+  public static fromUri(didUri: string): Promise<DidJwk> {
+    return new Promise<DidJwk>(async (onSuccess: Function, onError: Function) => {
+      if (!JWK_DID_REGEX.test(didUri))
+        throw new URIError("URI does not match the did:jwk pattern!");
 
-    let groups: RegExpMatchArray = didUri.match(JWK_DID_REGEX);
+      let groups: RegExpMatchArray = didUri.match(JWK_DID_REGEX);
 
 
-    let base64Key: string = groups[1];
-    let compressedPublicKey: string = Buffer.from(base64Key, "base64")
-      .toString();
+      let base64Key: string = groups[1];
+      let compressedPublicKey: string = Buffer.from(base64Key, "base64")
+        .toString();
 
-    let jwk: JWK.RSAKey | JWK.ECKey | JWK.OKPKey | JWK.OctKey =
-      jsonpack.unpack(compressedPublicKey);
+      let jwk: JWK.Key = await JWK.asKey(jsonpack.unpack(compressedPublicKey));
 
-    return new DidJwk(jwk, didUri);
+      onSuccess(new DidJwk(jwk, didUri));
+    });
+
   }
 
-  private static jwkToPublicBase64(jwk: JWK.RSAKey | JWK.ECKey | JWK.OKPKey
-    | JWK.OctKey): string {
+  private static jwkToPublicBase64(jwk: JWK.Key): string {
     // 1) Get the public key
-    let publicKey: object = jwk.toJWK(false);
+    let publicKey: object = jwk.toJSON(false);
 
     // 2) Compress
     let compressedPublicKey: string = jsonpack.pack(publicKey);
