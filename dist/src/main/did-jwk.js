@@ -42,11 +42,18 @@ Object.defineProperty(exports, "__esModule", { value: true });
 //import { JWK } from "jose";
 var node_jose_1 = require("node-jose");
 var model_1 = require("./model");
+var certs_1 = require("./certs");
+var exceptions_1 = require("./exceptions");
+var node_forge_1 = require("node-forge");
+var zlib_1 = __importDefault(require("zlib"));
 var util_1 = __importDefault(require("util"));
 var base64url_1 = __importDefault(require("base64url"));
-var jsonpack_1 = __importDefault(require("jsonpack"));
-exports.JWK_DID_REGEX = new RegExp("^did:jwk:([-A-Za-z0-9+=]{1,3000})$");
+exports.JWK_DID_REGEX = new RegExp("^did:jwk:([-A-Za-z0-9+=]+)$");
 var DID_FORMAT = "did:jwk:%s";
+/*
+ * TODO: Verify
+ * TODO: Use const
+ */
 var DidJwk = /** @class */ (function () {
     function DidJwk(jwk, didUri) {
         node_jose_1.JWK.createKey;
@@ -60,29 +67,87 @@ var DidJwk = /** @class */ (function () {
         return util_1.default.format(DID_FORMAT, publicKey);
     };
     DidJwk.prototype.getDidDocument = function () {
-        var didUri = this.getDidUri();
-        var publicJwk = this.jwk.toJSON(false);
-        /*
-        if (this.jwk.private)
-          publicJwk = DidJwk.fromUri(didUri).getJwk();
-        else
-          publicJwk = this.jwk;*/
-        var publicKey = new model_1.JwkPublicKey(util_1.default.format(model_1.KEY_ID_FORMAT, this.getDidUri()), publicJwk);
-        var publicKeys = [publicKey];
-        //let keyId: string = this.getDidUri() + "#keys-1";
-        return {
-            "@context": "https://w3id.org/did/v1",
-            id: this.getDidUri(),
-            publicKey: publicKeys,
-        };
+        return __awaiter(this, void 0, void 0, function () {
+            var verificationResult, publicJwk, didUri, publicKey, publicKeys;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, this.verify()];
+                    case 1:
+                        verificationResult = _a.sent();
+                        publicJwk = this.jwk.toJSON(false);
+                        if ("x5c" in this.jwk)
+                            publicJwk["x5c"] = this.jwk["x5c"];
+                        didUri = this.getDidUri();
+                        publicKey = new model_1.JwkPublicKey(util_1.default.format(model_1.KEY_ID_FORMAT, didUri), publicJwk, this.jwk.toPEM(false), didUri);
+                        if (verificationResult["hasDomainName"])
+                            publicKey.domainName = verificationResult["domainName"];
+                        publicKeys = [publicKey];
+                        return [2 /*return*/, {
+                                "@context": "https://w3id.org/did/v1",
+                                id: this.getDidUri(),
+                                publicKey: publicKeys,
+                            }];
+                }
+            });
+        });
     };
     DidJwk.prototype.getJwk = function () {
         return this.jwk;
     };
+    // Verifies
+    DidJwk.prototype.verify = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var jwkThumprint, _a, _b, verificationResult, certPem, keyStore, certJwk, certJwkThumbPrint, _c, _d;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
+                    case 0:
+                        _b = (_a = Buffer).from;
+                        return [4 /*yield*/, this.jwk.thumbprint()];
+                    case 1:
+                        jwkThumprint = _b.apply(_a, [_e.sent()]).toString("base64");
+                        if (!("x5c" in this.jwk))
+                            return [2 /*return*/, { hasDomainName: false }];
+                        verificationResult = certs_1.Certs.verifyX5c(this.jwk["x5c"]);
+                        certPem = node_forge_1.pki.certificateToPem(verificationResult.certificate);
+                        keyStore = node_jose_1.JWK.createKeyStore();
+                        return [4 /*yield*/, keyStore.add(certPem, "pem")];
+                    case 2:
+                        certJwk = _e.sent();
+                        _d = (_c = Buffer).from;
+                        return [4 /*yield*/, certJwk.thumbprint()];
+                    case 3:
+                        certJwkThumbPrint = _d.apply(_c, [_e.sent()]).toString("base64");
+                        // Compare the thumbprints
+                        if (jwkThumprint != certJwkThumbPrint)
+                            throw new exceptions_1.DidJwkVerificationException("JWK does not match the key in the certificate!");
+                        return [2 /*return*/, { hasDomainName: true, domainName: verificationResult.domainName }];
+                }
+            });
+        });
+    };
+    DidJwk.fromX5c = function (x5c) {
+        return __awaiter(this, void 0, void 0, function () {
+            var certPem, keyStore, jwk;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        // Verify x5c
+                        certs_1.Certs.verifyX5c(x5c);
+                        certPem = "-----BEGIN CERTIFICATE-----\n\n    " + x5c[0] + "\n    \n-----END CERTIFICATE-----";
+                        keyStore = node_jose_1.JWK.createKeyStore();
+                        return [4 /*yield*/, keyStore.add(certPem, "pem")];
+                    case 1:
+                        jwk = _a.sent();
+                        // Set the x5c
+                        jwk["x5c"] = x5c;
+                        return [2 /*return*/, new DidJwk(jwk)];
+                }
+            });
+        });
+    };
     DidJwk.fromUri = function (didUri) {
-        var _this = this;
-        return new Promise(function (onSuccess, onError) { return __awaiter(_this, void 0, void 0, function () {
-            var groups, base64Key, compressedPublicKey, jwk;
+        return __awaiter(this, void 0, void 0, function () {
+            var groups, base64Key, compressedPublicKey, jwkJson, jwk;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -90,24 +155,35 @@ var DidJwk = /** @class */ (function () {
                             throw new URIError("URI does not match the did:jwk pattern!");
                         groups = didUri.match(exports.JWK_DID_REGEX);
                         base64Key = groups[1];
-                        compressedPublicKey = Buffer.from(base64Key, "base64")
-                            .toString();
-                        return [4 /*yield*/, node_jose_1.JWK.asKey(jsonpack_1.default.unpack(compressedPublicKey))];
+                        compressedPublicKey = Buffer.from(base64Key, "base64").toString();
+                        jwkJson = DidJwk.decompressBase64ToJson(compressedPublicKey);
+                        return [4 /*yield*/, node_jose_1.JWK.asKey(jwkJson)];
                     case 1:
                         jwk = _a.sent();
-                        onSuccess(new DidJwk(jwk, didUri));
-                        return [2 /*return*/];
+                        if ("x5c" in jwkJson)
+                            jwk["x5c"] = jwkJson["x5c"];
+                        return [2 /*return*/, new DidJwk(jwk, didUri)];
                 }
             });
-        }); });
+        });
     };
     DidJwk.jwkToPublicBase64 = function (jwk) {
         // 1) Get the public key
         var publicKey = jwk.toJSON(false);
+        if ("x5c" in jwk)
+            publicKey["x5c"] = jwk["x5c"];
         // 2) Compress
-        var compressedPublicKey = jsonpack_1.default.pack(publicKey);
+        var compressedPublicKey = DidJwk.compressJsonToBase64(publicKey);
         // 3) Encode
         return base64url_1.default(compressedPublicKey);
+    };
+    DidJwk.compressJsonToBase64 = function (json) {
+        var jwkJson = JSON.stringify(json);
+        var compressedJwkJson = zlib_1.default.deflateSync(Buffer.from(jwkJson, "utf-8"));
+        return compressedJwkJson.toString("base64");
+    };
+    DidJwk.decompressBase64ToJson = function (compressedBase64) {
+        return JSON.parse(zlib_1.default.inflateSync(Buffer.from(compressedBase64, "base64")).toString());
     };
     return DidJwk;
 }());

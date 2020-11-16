@@ -3,5 +3,5 @@ function __export(m) {
     for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
 }
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(require("./jwk-public-key"));
-__export(require("./x5c-verification-result"));
+__export(require("./certificate-verification-exception"));
+__export(require("./did-jwk-verification-exception"));

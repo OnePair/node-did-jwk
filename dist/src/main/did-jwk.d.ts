@@ -6,8 +6,12 @@ export declare class DidJwk {
     private jwk;
     constructor(jwk: JWK.Key, didUri?: string);
     getDidUri(): string;
-    getDidDocument(): DIDDocument;
+    getDidDocument(): Promise<DIDDocument>;
     getJwk(): JWK.Key;
+    verify(): Promise<object>;
+    static fromX5c(x5c: Array<string>): Promise<DidJwk>;
     static fromUri(didUri: string): Promise<DidJwk>;
     private static jwkToPublicBase64;
+    private static compressJsonToBase64;
+    private static decompressBase64ToJson;
 }

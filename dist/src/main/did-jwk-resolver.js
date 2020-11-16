@@ -38,7 +38,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var _1 = require("./");
 function getResolver() {
-    function resolve(did, parsed, didResolver) {
+    function resolve(did) {
         return __awaiter(this, void 0, void 0, function () {
             var didJwk;
             return __generator(this, function (_a) {
@@ -46,7 +46,8 @@ function getResolver() {
                     case 0: return [4 /*yield*/, _1.DidJwk.fromUri(did)];
                     case 1:
                         didJwk = _a.sent();
-                        return [2 /*return*/, didJwk.getDidDocument()];
+                        return [4 /*yield*/, didJwk.getDidDocument()];
+                    case 2: return [2 /*return*/, _a.sent()];
                 }
             });
         });
