@@ -1,7 +1,7 @@
 //import { JWK } from "jose";
 import { JWK } from "node-jose";
 import { DIDDocument, PublicKey } from "did-resolver";
-import { JwkPublicKey, KEY_ID_FORMAT, X5CVerificationResult } from "./model";
+import { X5CVerificationResult } from "./model";
 import { Certs } from "./certs";
 import { DidJwkVerificationException } from "./exceptions";
 
@@ -13,6 +13,7 @@ import base64url from "base64url";
 
 export const JWK_DID_REGEX = new RegExp("^did:jwk:([-A-Za-z0-9+=]+)$");
 const DID_FORMAT = "did:jwk:%s";
+const KEY_ID_FORMAT: string = "%s#keys-1";
 
 /*
  * TODO: Verify
@@ -45,15 +46,15 @@ export class DidJwk {
 
     const didUri: string = this.getDidUri();
 
-    const publicKey: JwkPublicKey = new JwkPublicKey(
-      util.format(KEY_ID_FORMAT, didUri),
-      publicJwk,
-      this.jwk.toPEM(false),
-      didUri
-    );
+    const publicKey: PublicKey = {
+      id: util.format(KEY_ID_FORMAT, didUri),
+      type: "JsonWebKey2020",
+      controller: didUri,
+      publicKeyPem: this.jwk.toPEM(false),
+    };
 
     if (verificationResult["hasDomainName"])
-      publicKey.domainName = verificationResult["domainName"];
+      publicKey["domainName"] = verificationResult["domainName"];
 
     const publicKeys: PublicKey[] = [publicKey];
 
@@ -98,7 +99,9 @@ export class DidJwk {
 
     // Compare the thumbprints
     if (jwkThumprint != certJwkThumbPrint)
-      throw new DidJwkVerificationException("JWK does not match the key in the certificate!");
+      throw new DidJwkVerificationException(
+        "JWK does not match the key in the certificate!"
+      );
 
     return { hasDomainName: true, domainName: verificationResult.domainName };
   }

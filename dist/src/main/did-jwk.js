@@ -41,7 +41,6 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 //import { JWK } from "jose";
 var node_jose_1 = require("node-jose");
-var model_1 = require("./model");
 var certs_1 = require("./certs");
 var exceptions_1 = require("./exceptions");
 var node_forge_1 = require("node-forge");
@@ -50,6 +49,7 @@ var util_1 = __importDefault(require("util"));
 var base64url_1 = __importDefault(require("base64url"));
 exports.JWK_DID_REGEX = new RegExp("^did:jwk:([-A-Za-z0-9+=]+)$");
 var DID_FORMAT = "did:jwk:%s";
+var KEY_ID_FORMAT = "%s#keys-1";
 /*
  * TODO: Verify
  * TODO: Use const
@@ -78,9 +78,14 @@ var DidJwk = /** @class */ (function () {
                         if ("x5c" in this.jwk)
                             publicJwk["x5c"] = this.jwk["x5c"];
                         didUri = this.getDidUri();
-                        publicKey = new model_1.JwkPublicKey(util_1.default.format(model_1.KEY_ID_FORMAT, didUri), publicJwk, this.jwk.toPEM(false), didUri);
+                        publicKey = {
+                            id: util_1.default.format(KEY_ID_FORMAT, didUri),
+                            type: "JsonWebKey2020",
+                            controller: didUri,
+                            publicKeyPem: this.jwk.toPEM(false),
+                        };
                         if (verificationResult["hasDomainName"])
-                            publicKey.domainName = verificationResult["domainName"];
+                            publicKey["domainName"] = verificationResult["domainName"];
                         publicKeys = [publicKey];
                         return [2 /*return*/, {
                                 "@context": "https://w3id.org/did/v1",
