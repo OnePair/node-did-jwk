@@ -59,6 +59,7 @@ export class Certs {
     return {
       domainName,
       certificate: certificates[0],
+      rootCertificate: rootCert
     };
   }
 }

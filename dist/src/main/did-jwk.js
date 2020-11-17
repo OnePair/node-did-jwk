@@ -84,8 +84,11 @@ var DidJwk = /** @class */ (function () {
                             controller: didUri,
                             publicKeyPem: this.jwk.toPEM(false),
                         };
-                        if (verificationResult["hasDomainName"])
+                        if (verificationResult["hasDomainName"]) {
                             publicKey["domainName"] = verificationResult["domainName"];
+                            publicKey["certificate"] = verificationResult["certificate"];
+                            publicKey["rootCertificate"] = verificationResult["rootCertificate"];
+                        }
                         publicKeys = [publicKey];
                         return [2 /*return*/, {
                                 "@context": "https://w3id.org/did/v1",
@@ -125,7 +128,12 @@ var DidJwk = /** @class */ (function () {
                         // Compare the thumbprints
                         if (jwkThumprint != certJwkThumbPrint)
                             throw new exceptions_1.DidJwkVerificationException("JWK does not match the key in the certificate!");
-                        return [2 /*return*/, { hasDomainName: true, domainName: verificationResult.domainName }];
+                        return [2 /*return*/, {
+                                hasDomainName: true,
+                                domainName: verificationResult.domainName,
+                                certificate: node_forge_1.pki.certificateToPem(verificationResult.certificate),
+                                rootCertificate: node_forge_1.pki.certificateToPem(verificationResult.rootCertificate),
+                            }];
                 }
             });
         });

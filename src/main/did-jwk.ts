@@ -53,8 +53,11 @@ export class DidJwk {
       publicKeyPem: this.jwk.toPEM(false),
     };
 
-    if (verificationResult["hasDomainName"])
+    if (verificationResult["hasDomainName"]) {
       publicKey["domainName"] = verificationResult["domainName"];
+      publicKey["certificate"] = verificationResult["certificate"];
+      publicKey["rootCertificate"] = verificationResult["rootCertificate"];
+    }
 
     const publicKeys: PublicKey[] = [publicKey];
 
@@ -103,7 +106,12 @@ export class DidJwk {
         "JWK does not match the key in the certificate!"
       );
 
-    return { hasDomainName: true, domainName: verificationResult.domainName };
+    return {
+      hasDomainName: true,
+      domainName: verificationResult.domainName,
+      certificate: pki.certificateToPem(verificationResult.certificate),
+      rootCertificate: pki.certificateToPem(verificationResult.rootCertificate),
+    };
   }
 
   public static async fromX5c(x5c: Array<string>): Promise<DidJwk> {

@@ -40,6 +40,7 @@ var Certs = /** @class */ (function () {
         return {
             domainName: domainName,
             certificate: certificates[0],
+            rootCertificate: rootCert
         };
     };
     return Certs;
